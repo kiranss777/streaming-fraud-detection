@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Data and model artifacts (live in S3, not git)
+dataset/
+data/
+models/
+*.csv
+*.parquet
+*.tar.gz
+
+# Secrets
+.env
+kaggle.json
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
