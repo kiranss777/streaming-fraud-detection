@@ -1,15 +1,18 @@
 """Glue ETL: raw Kaggle CSVs -> model-ready features (Parquet).
 
 Reads   s3://<bucket>/raw/fraudTrain.csv, raw/fraudTest.csv
-Writes  s3://<bucket>/processed/train/          features + label
-        s3://<bucket>/processed/test/           features + label
-        s3://<bucket>/processed/card_profiles/  per-card spending stats (train only),
-                                                later loaded into Cassandra for streaming lookups
+Writes  s3://<bucket>/processed/train/       features + label
+        s3://<bucket>/processed/test/        features + label
+        s3://<bucket>/processed/card_state/  each card's running totals as of the end of train -
+                                             the starting point for the live stream (via Cassandra)
+
+Card features are point-in-time: each transaction only sees that card's EARLIER
+transactions, exactly what the live stream will know when a swipe arrives.
 """
 import sys
 
 from awsglue.utils import getResolvedOptions
-from pyspark.sql import SparkSession, functions as F
+from pyspark.sql import SparkSession, Window, functions as F
 from pyspark.sql.types import DoubleType, IntegerType, LongType, StringType, StructField, StructType
 
 args = getResolvedOptions(sys.argv, ["DATA_BUCKET"])
@@ -85,25 +88,46 @@ def row_features(df):
     )
 
 
-train = row_features(read_raw("fraudTrain.csv"))
-test = row_features(read_raw("fraudTest.csv"))
+train = row_features(read_raw("fraudTrain.csv")).withColumn("split", F.lit("train"))
+test = row_features(read_raw("fraudTest.csv")).withColumn("split", F.lit("test"))
 
-# Per-card spending profile, from train only so test rows never leak into it.
-card_profiles = train.groupBy("cc_num").agg(
-    F.avg("amt").alias("card_avg_amt"),
-    F.stddev("amt").alias("card_std_amt"),
-    F.count("*").alias("card_txn_count"),
+# One continuous timeline per card: test (Jun-Dec 2020) directly follows train, so a
+# test transaction's history includes the card's train-period transactions, as in real life.
+# Only past amounts/times are used - never labels - so this leaks nothing.
+txns = train.unionByName(test).withColumn("ts_sec", F.col("trans_ts").cast("long"))
+
+by_card = Window.partitionBy("cc_num").orderBy("ts_sec", "trans_num")
+all_before = by_card.rowsBetween(Window.unboundedPreceding, -1)  # every earlier txn, not this one
+by_card_time = Window.partitionBy("cc_num").orderBy("ts_sec")
+last_hour = by_card_time.rangeBetween(-3600, -1)                 # earlier txns in the past hour
+last_day = by_card_time.rangeBetween(-86400, -1)                 # ...in the past 24 hours
+
+features = (
+    txns
+    # Velocity: thieves use a stolen card fast, before it gets blocked.
+    .withColumn("secs_since_last_txn", F.col("ts_sec") - F.lag("ts_sec").over(by_card))
+    .withColumn("txn_count_1h", F.count("*").over(last_hour))
+    .withColumn("txn_count_24h", F.count("*").over(last_day))
+    .withColumn("amt_sum_24h", F.coalesce(F.sum("amt").over(last_day), F.lit(0.0)))
+    # Spending habits so far. A card's first txn has no history (count 0, avg null) -
+    # the model learns what "brand-new card" looks like.
+    .withColumn("card_txn_count", F.count("*").over(all_before))
+    .withColumn("card_avg_amt", F.avg("amt").over(all_before))
+    .withColumn("card_std_amt", F.stddev("amt").over(all_before))
+    .withColumn("amt_to_card_avg", F.col("amt") / F.col("card_avg_amt"))
+    .withColumn("amt_zscore", (F.col("amt") - F.col("card_avg_amt")) / F.col("card_std_amt"))
 )
 
+for split in ("train", "test"):
+    (features.filter(F.col("split") == split).drop("split", "ts_sec")
+     .write.mode("overwrite").parquet(f"{BUCKET}/processed/{split}/"))
 
-def add_card_features(df):
-    return (
-        df.join(card_profiles, "cc_num", "left")  # unseen cards get nulls; XGBoost handles them
-        .withColumn("amt_to_card_avg", F.col("amt") / F.col("card_avg_amt"))
-        .withColumn("amt_zscore", (F.col("amt") - F.col("card_avg_amt")) / F.col("card_std_amt"))
-    )
-
-
-add_card_features(train).write.mode("overwrite").parquet(f"{BUCKET}/processed/train/")
-add_card_features(test).write.mode("overwrite").parquet(f"{BUCKET}/processed/test/")
-card_profiles.write.mode("overwrite").parquet(f"{BUCKET}/processed/card_profiles/")
+# Running totals per card at the end of train. The stream replays the test period as
+# "live" traffic and continues these totals (count/sum/sum of squares give avg and std).
+card_state = train.groupBy("cc_num").agg(
+    F.count("*").alias("txn_count"),
+    F.sum("amt").alias("amt_sum"),
+    F.sum(F.col("amt") * F.col("amt")).alias("amt_sumsq"),
+    F.max("trans_ts").alias("last_txn_ts"),
+)
+card_state.write.mode("overwrite").parquet(f"{BUCKET}/processed/card_state/")

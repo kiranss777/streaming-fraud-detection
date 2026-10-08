@@ -22,7 +22,9 @@ from sklearn.metrics import average_precision_score, precision_recall_curve, roc
 
 FEATURES = [
     "category", "amt", "gender", "city_pop", "age", "hour", "day_of_week", "distance_km",
-    "card_avg_amt", "card_std_amt", "card_txn_count", "amt_to_card_avg", "amt_zscore",
+    # point-in-time card history (only earlier transactions)
+    "secs_since_last_txn", "txn_count_1h", "txn_count_24h", "amt_sum_24h",
+    "card_txn_count", "card_avg_amt", "card_std_amt", "amt_to_card_avg", "amt_zscore",
 ]
 # Kept as single categorical features (not one-hot) so SHAP gives one readable value per feature.
 CATEGORICAL = ["category", "gender"]
