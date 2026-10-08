@@ -180,14 +180,20 @@ def shap_chart(alert):
     s["direction"] = np.where(s.shap > 0, "toward fraud", "toward legit")
     return alt.Chart(s).mark_bar().encode(
         x=alt.X("shap:Q", title="SHAP value (push on the fraud score)"),
-        y=alt.Y("label:N", sort=None, title=None),
+        y=alt.Y("label:N", sort=None, title=None, axis=alt.Axis(labelLimit=340)),
         color=alt.Color("direction:N", scale=alt.Scale(domain=["toward fraud", "toward legit"],
                                                        range=["#ff0051", "#008bfb"]), legend=None),
         tooltip=["label", alt.Tooltip("shap:Q", format="+.2f")],
     ).properties(height=320)
 
 
-@st.fragment(run_every=REFRESH)
+def remember_pick():
+    """Runs only when the user clicks a row: save WHICH alert (not its row position, which shifts
+    as new alerts arrive every refresh) so the drill-down stays on it."""
+    rows = st.session_state.alert_feed["selection"]["rows"]
+    st.session_state.picked = st.session_state.feed_alerts.iloc[rows[0]] if rows else None
+
+
 def live_alerts():
     window = 5
     alerts, metrics = recent_alerts(window), recent_metrics(window)
@@ -217,14 +223,16 @@ def live_alerts():
     })
     st.caption("Select a row to see why it was flagged and that card's recent activity. "
                "'Truth' comes from the dataset's labels - a real bank learns it weeks later via chargebacks.")
-    event = st.dataframe(feed, hide_index=True, width="stretch", height=300,
-                         on_select="rerun", selection_mode="single-row", key="alert_feed")
-    picked = event.selection.rows
-    if picked:
-        alert = alerts.iloc[picked[0]]
+    st.session_state.feed_alerts = alerts  # the rows as displayed, for remember_pick
+    st.dataframe(feed, hide_index=True, width="stretch", height=300,
+                 on_select=remember_pick, selection_mode="single-row", key="alert_feed")
+    alert = st.session_state.get("picked")
+    if alert is not None:
         left, right = st.columns([3, 2])
         with left:
             st.subheader(f"Why {masked(alert.cc_num)} was flagged")
+            st.caption(f"${alert.amt:,.2f} at {str(alert.merchant).removeprefix('fraud_')} · score {alert.score:.3f} · "
+                       f"{'true fraud' if alert.is_fraud else 'false alarm'}")
             st.altair_chart(shap_chart(alert), width="stretch")
         with right:
             st.subheader("Card's last 10 swipes")
@@ -246,12 +254,13 @@ def health():
         return
 
     st.subheader("Throughput")
-    rates = m.set_index("batch_end")[["produced_rate", "processed_rate", "written_rate"]].rename(columns={
-        "produced_rate": "Arriving (producer → Kafka)", "processed_rate": "Scoring speed (Spark)",
-        "written_rate": "Write speed (Cassandra)"})
-    st.line_chart(rates.rolling(5, min_periods=1).mean(), y_label="swipes / sec")
-    st.caption("Arriving = swipes/sec sent by the producer. Scoring and write speed = each stage's "
-               "capacity while busy - if arrivals exceed them, the Kafka backlog grows.")
+    per_10s = m.set_index("batch_end")
+    st.line_chart(pd.DataFrame({
+        "Arriving (producer → Kafka)": per_10s["produced_rate"].resample("10s").mean(),
+        "Processed (Spark → model → Cassandra)": per_10s["rows"].resample("10s").sum() / 10,
+    }), y_label="swipes / sec")
+    st.caption("If arrivals stay above processed, the Kafka backlog grows. Measured capacity on this "
+               "2 × 2-vCPU setup: ~9,600 swipes/sec.")
 
     lat = hist_sum(m.latency_hist_ms, len(LATENCY_EDGES_MS) + 1)
     c1, c2, c3, c4 = st.columns(4)
@@ -302,14 +311,15 @@ def health():
 
 # ---------- Layout ----------
 
-head, button = st.columns([4, 1])
+head, pause, button = st.columns([4, 1, 1])
 head.title("🛡️ Real-Time Fraud Detection")
+paused = pause.toggle("⏸ Pause live updates", help="Freeze the alert feed so rows don't move while you click")
 if button.button("💥 Inject fraud burst", help="Send 5 stolen-card-style swipes for a random real card"):
     card = inject_burst()
     button.success(f"Sent 5 swipes for {masked(card)} - watch the feed")
 
 tab1, tab2 = st.tabs(["🚨 Live Alerts", "📈 Health & Model"])
 with tab1:
-    live_alerts()
+    st.fragment(run_every=None if paused else REFRESH)(live_alerts)()
 with tab2:
     health()
