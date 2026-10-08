@@ -60,17 +60,10 @@ CREATE TABLE IF NOT EXISTS fraud.pipeline_metrics (
     score_hist_fraud  list<int>,       -- counts of true frauds per score bucket (0.00-0.05, 0.05-0.10, ...)
     score_hist_legit  list<int>,       -- counts of legit txns per score bucket
     tp int, fp int, fn int, tn int,    -- at the model's default cutoff
+    fraud_amt_caught  double,          -- $ of true frauds flagged
+    fraud_amt_missed  double,          -- $ of true frauds let through
+    max_offsets       map<int, bigint>, -- Kafka partition -> last offset processed (dashboard: backlog)
     model_version     text,
+    trigger           text,             -- micro-batch interval, shown beside the latency numbers
     PRIMARY KEY ((day), batch_end, batch_id)
 ) WITH CLUSTERING ORDER BY (batch_end DESC, batch_id ASC);
-
--- Q: "What are this card's running totals?"
---    The stream's starting point, seeded from Glue's processed/card_state (end of training period).
---    count/sum/sum-of-squares give mean and std without re-reading history.
-CREATE TABLE IF NOT EXISTS fraud.card_state (
-    cc_num       text PRIMARY KEY,
-    txn_count    bigint,
-    amt_sum      double,
-    amt_sumsq    double,
-    last_txn_ts  timestamp
-);
