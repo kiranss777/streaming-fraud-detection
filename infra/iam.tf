@@ -1,4 +1,4 @@
-# Read/write on the data bucket, shared by Glue and SageMaker.
+# Read/write on the data bucket, shared by the EC2 host, Glue and SageMaker.
 resource "aws_iam_policy" "bucket_access" {
   name = "${var.project}-bucket-access"
 
@@ -22,6 +22,10 @@ resource "aws_iam_policy" "bucket_access" {
 locals {
   # role name => AWS service that assumes it, and the AWS-managed policy it gets
   roles = {
+    host = {
+      service = "ec2.amazonaws.com"
+      policy  = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore" # lets SSM reach it - no SSH, no open ports
+    }
     glue = {
       service = "glue.amazonaws.com"
       policy  = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
@@ -57,4 +61,9 @@ resource "aws_iam_role_policy_attachment" "bucket" {
   for_each   = local.roles
   role       = aws_iam_role.this[each.key].name
   policy_arn = aws_iam_policy.bucket_access.arn
+}
+
+resource "aws_iam_instance_profile" "host" {
+  name = "${var.project}-host"
+  role = aws_iam_role.this["host"].name
 }

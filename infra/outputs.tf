@@ -17,3 +17,12 @@ output "sagemaker_role_arn" {
 output "training_pipeline" {
   value = aws_sagemaker_pipeline.training.pipeline_name
 }
+
+output "instance_ids" {
+  value = { for role, h in aws_instance.host : role => h.id }
+}
+
+output "connect" {
+  description = "Open a shell on a host (needs the Session Manager plugin)"
+  value       = { for role, h in aws_instance.host : role => "aws ssm start-session --target ${h.id}" }
+}
