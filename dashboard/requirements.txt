@@ -1,0 +1,5 @@
+streamlit>=1.40         # fragments (auto-refresh) and dataframe row selection
+cassandra-driver==3.29.2
+confluent-kafka          # Kafka backlog (end offsets) and the demo burst button
+pandas
+boto3                    # card profiles for the demo burst (raw CSV in S3)

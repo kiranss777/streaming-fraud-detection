@@ -77,6 +77,33 @@ services:
       DATA_BUCKET: ${DATA_BUCKET}
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
 
+  # The fraud detector: Kafka -> features -> model + SHAP -> Cassandra. Runs continuously.
+  stream:
+    profiles: [compute]
+    build: ./stream
+    container_name: stream
+    restart: unless-stopped
+    environment:
+      DATA_HOST_IP: ${DATA_HOST_IP}
+      DATA_BUCKET: ${DATA_BUCKET}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      MODEL_VERSION: v3-tuned
+      TRIGGER: 1 second
+    volumes: [stream-checkpoint:/checkpoint] # Kafka offsets + per-card state survive restarts
+
+  # Live dashboard on port 8501. No inbound internet access - open it through an SSM port forward.
+  dashboard:
+    profiles: [compute]
+    build: ./dashboard
+    container_name: dashboard
+    restart: unless-stopped
+    ports: ["8501:8501"]
+    environment:
+      DATA_HOST_IP: ${DATA_HOST_IP}
+      DATA_BUCKET: ${DATA_BUCKET}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+
 volumes:
   kafka-data:
   cassandra-data:
+  stream-checkpoint:

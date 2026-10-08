@@ -9,6 +9,9 @@ locals {
   app_files = concat(
     ["docker-compose.yml", "cassandra/schema.cql"],
     tolist(fileset("${path.module}/..", "producer/*")),
+    tolist(fileset("${path.module}/..", "stream/*.{py,txt}")),
+    ["stream/Dockerfile"],
+    ["dashboard/app.py", "dashboard/requirements.txt", "dashboard/Dockerfile"],
   )
 
   hosts = {
