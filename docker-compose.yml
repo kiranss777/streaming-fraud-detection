@@ -65,6 +65,18 @@ services:
     entrypoint: ["cqlsh", "cassandra", "-f", "/schema.cql"]
     restart: "no"
 
+  # ---------- compute host ----------
+
+  # Replays test transactions into Kafka. Own profile, so it never starts at boot -
+  # run it on demand: docker compose run --rm producer --rate 100
+  producer:
+    profiles: [producer]
+    build: ./producer
+    environment:
+      DATA_HOST_IP: ${DATA_HOST_IP}
+      DATA_BUCKET: ${DATA_BUCKET}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+
 volumes:
   kafka-data:
   cassandra-data:

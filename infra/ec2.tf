@@ -6,7 +6,10 @@
 # ---------- App files the hosts run ----------
 # Same pattern as the Glue and training code: git -> Terraform -> S3 -> the hosts pull it.
 locals {
-  app_files = ["docker-compose.yml", "cassandra/schema.cql"]
+  app_files = concat(
+    ["docker-compose.yml", "cassandra/schema.cql"],
+    tolist(fileset("${path.module}/..", "producer/*")),
+  )
 
   hosts = {
     data    = { private_ip = "10.20.1.10", disk_gb = 30 } # Kafka log + Cassandra data
@@ -44,7 +47,8 @@ resource "aws_instance" "host" {
   }
 
   metadata_options {
-    http_tokens = "required" # IMDSv2 only
+    http_tokens                 = "required" # IMDSv2 only
+    http_put_response_hop_limit = 2          # +1 hop so Docker containers can use the host's IAM role
   }
 
   # First boot: install Docker + Compose, pull the app files from S3, start this host's

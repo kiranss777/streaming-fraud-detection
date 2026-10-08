@@ -1,0 +1,3 @@
+confluent-kafka  # fast Kafka client (wraps librdkafka, the C library)
+pandas           # read and replay the test CSV
+boto3            # fetch the CSV from S3 (credentials come from the host's IAM role)
