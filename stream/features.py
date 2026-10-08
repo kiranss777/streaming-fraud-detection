@@ -78,9 +78,14 @@ class CardHistory:
 
     def next(self, ts, amt):
         """Features for a swipe at `ts` (epoch seconds), then record it.
-        Windows match Glue's rangeBetween(-3600 / -86400, -1): earlier seconds only."""
+        Windows match Glue's rangeBetween(-3600 / -86400, -1): earlier seconds only.
+
+        Late (out-of-order) swipes are tolerated: the 24h list is trimmed against the LATEST
+        time seen, so it stays bounded even if time goes backwards. For in-order swipes the
+        latest time is `ts` itself, so results are identical to Glue's."""
         recent = self.recent
-        while recent and recent[0][0] < ts - DAY:
+        latest = ts if self.last_ts is None else max(ts, self.last_ts)
+        while recent and recent[0][0] < latest - DAY:
             recent.popleft()
         n_1h = n_24h = 0
         sum_24h = 0.0
@@ -109,8 +114,9 @@ class CardHistory:
         self.count += 1
         self.amt_sum += amt
         self.amt_sumsq += amt * amt
-        self.last_ts = ts
-        recent.append((ts, amt))
+        self.last_ts = latest
+        if ts >= latest - DAY:  # a swipe more than a day late can't fall in any future 24h window
+            recent.append((ts, amt))
         return features
 
 

@@ -6,6 +6,7 @@ The model folder is what SageMaker training saved (model.tar.gz, unpacked):
 """
 import json
 import math
+import time
 from functools import lru_cache
 
 import numpy as np
@@ -74,22 +75,27 @@ class Scorer:
         self.booster = xgb.Booster()
         self.booster.load_model(f"{model_dir}/xgboost-model.json")
 
-    def matrix(self, df):
+    def frame(self, df):
         X = df[self.features].copy()
         for c in self.categorical:  # same category list (and codes) as training
             X[c] = pd.Categorical(X[c], categories=self.categories[c])
-        return xgb.DMatrix(X, enable_categorical=True)
+        return X
 
     def score(self, df):
-        """df + score, flagged; flagged rows also get reasons, shap_json, values_json."""
-        score = self.booster.predict(self.matrix(df), iteration_range=self.iters)
+        """df + score, flagged; flagged rows also get reasons, shap_json, values_json.
+        Sets self.timings (ms) for the stream's batch log."""
+        t0 = time.perf_counter()
+        # inplace_predict skips building a DMatrix: same scores, less overhead.
+        score = self.booster.inplace_predict(self.frame(df), iteration_range=self.iters)
+        t1 = time.perf_counter()
         flagged = score >= self.threshold
         out = df.assign(score=score.astype("float32"), flagged=flagged,
                         reasons=None, shap_json=None, values_json=None)
         if flagged.any():
             sub = df[flagged]
             # Exact TreeSHAP from XGBoost itself; last column is the baseline - dropped.
-            contribs = self.booster.predict(self.matrix(sub), pred_contribs=True, iteration_range=self.iters)[:, :-1]
+            contribs = self.booster.predict(xgb.DMatrix(self.frame(sub), enable_categorical=True),
+                                            pred_contribs=True, iteration_range=self.iters)[:, :-1]
             reasons, shaps, values = [], [], []
             for vals, c in zip(sub[self.features].to_dict("records"), contribs):
                 top = [j for j in np.argsort(-c)[:3] if c[j] > 0]
@@ -99,6 +105,7 @@ class Scorer:
             out.loc[flagged, "reasons"] = reasons
             out.loc[flagged, "shap_json"] = shaps
             out.loc[flagged, "values_json"] = values
+        self.timings = {"predict": 1000 * (t1 - t0), "shap": 1000 * (time.perf_counter() - t1)}
         return out
 
 

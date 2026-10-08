@@ -69,3 +69,20 @@ resource "aws_vpc_security_group_ingress_rule" "cassandra_between_hosts" {
   to_port                      = 9042
   description                  = "Cassandra, compute host to data host"
 }
+
+# Optional: open the dashboard (8501) to ONE address, e.g. your own IP for a demo.
+# Off by default; enable with  -var dashboard_cidr=<your-ip>/32  and remove by re-applying without it.
+variable "dashboard_cidr" {
+  type    = string
+  default = ""
+}
+
+resource "aws_vpc_security_group_ingress_rule" "dashboard" {
+  count             = var.dashboard_cidr == "" ? 0 : 1
+  security_group_id = aws_security_group.host.id
+  cidr_ipv4         = var.dashboard_cidr
+  ip_protocol       = "tcp"
+  from_port         = 8501
+  to_port           = 8501
+  description       = "Streamlit dashboard, single allowed address"
+}

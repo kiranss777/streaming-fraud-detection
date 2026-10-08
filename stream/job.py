@@ -141,8 +141,10 @@ class Processor:
         swipes = batch.toPandas()  # one Arrow transfer of this batch's Kafka messages
         if swipes.empty:
             return
-
-        scored = self.scorer.score(features.compute(swipes, self.state.before(batch_id), self.state.seed))
+        read = time.time()
+        feats = features.compute(swipes, self.state.before(batch_id), self.state.seed)
+        featured = time.time()
+        scored = self.scorer.score(feats)
         scored["is_fraud"] = scored["is_fraud"] == 1
         done_scoring = time.time()
 
@@ -180,8 +182,10 @@ class Processor:
         ))
         p50, p95, p99 = np.percentile(latency_ms, [50, 95, 99])
         print(f"batch {batch_id}: {n:,} swipes, {int(flagged.sum())} flagged | latency p50 {p50:,.0f} / "
-              f"p95 {p95:,.0f} / p99 {p99:,.0f} ms | features+score {1000 * (done_scoring - started):,.0f} ms, "
-              f"cassandra {1000 * (written - done_scoring):,.0f} ms", flush=True)
+              f"p95 {p95:,.0f} / p99 {p99:,.0f} ms | kafka read {1000 * (read - started):,.0f}, "
+              f"features {1000 * (featured - read):,.0f}, predict {self.scorer.timings['predict']:,.0f}, "
+              f"shap {self.scorer.timings['shap']:,.0f}, cassandra {1000 * (written - done_scoring):,.0f} ms",
+              flush=True)
 
 
 def main():

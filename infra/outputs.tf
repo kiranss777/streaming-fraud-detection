@@ -26,3 +26,8 @@ output "connect" {
   description = "Open a shell on a host (needs the Session Manager plugin)"
   value       = { for role, h in aws_instance.host : role => "aws ssm start-session --target ${h.id}" }
 }
+
+output "dashboard_url" {
+  description = "Reachable only from dashboard_cidr, when set"
+  value       = "http://${aws_instance.host["compute"].public_ip}:8501"
+}
