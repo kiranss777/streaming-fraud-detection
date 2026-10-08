@@ -31,47 +31,74 @@ resource "aws_sagemaker_pipeline" "training" {
   pipeline_definition = jsonencode({
     Version = "2020-12-01"
     Steps = [{
-      Name = "TrainFraudModel"
-      Type = "Training"
-      # Same fields as the CreateTrainingJob API.
+      Name = "TuneFraudModel"
+      Type = "Tuning"
+      # Same fields as the CreateHyperParameterTuningJob API.
       Arguments = {
-        RoleArn = aws_iam_role.this["sagemaker"].arn
-        AlgorithmSpecification = {
-          TrainingImage     = data.aws_sagemaker_prebuilt_ecr_image.xgboost.registry_path
-          TrainingInputMode = "File"
+        HyperParameterTuningJobConfig = {
+          # Bayesian: learns from finished runs which settings look promising and tries those next.
+          Strategy = "Bayesian"
+          HyperParameterTuningJobObjective = {
+            Type       = "Maximize"
+            MetricName = "validation:aucpr" # built-in XGBoost metric, validation set only - test stays untouched
+          }
+          ResourceLimits = {
+            MaxNumberOfTrainingJobs = 20
+            MaxParallelTrainingJobs = 4
+          }
+          ParameterRanges = {
+            IntegerParameterRanges = [
+              { Name = "max_depth", MinValue = "3", MaxValue = "10", ScalingType = "Auto" },
+            ]
+            ContinuousParameterRanges = [
+              { Name = "eta", MinValue = "0.02", MaxValue = "0.3", ScalingType = "Logarithmic" },
+              { Name = "min_child_weight", MinValue = "1", MaxValue = "20", ScalingType = "Logarithmic" },
+              { Name = "subsample", MinValue = "0.6", MaxValue = "1.0", ScalingType = "Linear" },
+              { Name = "colsample_bytree", MinValue = "0.5", MaxValue = "1.0", ScalingType = "Linear" },
+              { Name = "max_delta_step", MinValue = "0", MaxValue = "10", ScalingType = "Linear" },
+            ]
+          }
+          TrainingJobEarlyStoppingType = "Off"
         }
-        # Script mode: values are JSON-encoded strings, the way the container expects them.
-        HyperParameters = {
-          sagemaker_program          = jsonencode("train.py")
-          sagemaker_submit_directory = jsonencode("/opt/ml/input/data/code")
-          max_depth                  = "6"
-          eta                        = "0.1"
-          num_round                  = "1000"
-          early_stopping_rounds      = "50"
-        }
-        InputDataConfig = [
-          for name, prefix in {
-            train = "processed/train/"
-            test  = "processed/test/"
-            code  = "scripts/training/"
-            } : {
-            ChannelName = name
-            DataSource = {
-              S3DataSource = {
-                S3DataType             = "S3Prefix"
-                S3Uri                  = "s3://${aws_s3_bucket.data.bucket}/${prefix}"
-                S3DataDistributionType = "FullyReplicated"
+
+        # What each of the 20 trial runs looks like (CreateTrainingJob fields).
+        TrainingJobDefinition = {
+          RoleArn = aws_iam_role.this["sagemaker"].arn
+          AlgorithmSpecification = {
+            TrainingImage     = data.aws_sagemaker_prebuilt_ecr_image.xgboost.registry_path
+            TrainingInputMode = "File"
+          }
+          # Fixed for every trial. Script-mode values are JSON-encoded, as the container expects.
+          StaticHyperParameters = {
+            sagemaker_program          = jsonencode("train.py")
+            sagemaker_submit_directory = jsonencode("/opt/ml/input/data/code")
+            num_round                  = "1000"
+            early_stopping_rounds      = "50"
+          }
+          InputDataConfig = [
+            for name, prefix in {
+              train = "processed/train/"
+              test  = "processed/test/"
+              code  = "scripts/training/"
+              } : {
+              ChannelName = name
+              DataSource = {
+                S3DataSource = {
+                  S3DataType             = "S3Prefix"
+                  S3Uri                  = "s3://${aws_s3_bucket.data.bucket}/${prefix}"
+                  S3DataDistributionType = "FullyReplicated"
+                }
               }
             }
+          ]
+          OutputDataConfig = { S3OutputPath = "s3://${aws_s3_bucket.data.bucket}/models/" }
+          ResourceConfig = {
+            InstanceCount  = 1
+            InstanceType   = "ml.m5.large"
+            VolumeSizeInGB = 10
           }
-        ]
-        OutputDataConfig = { S3OutputPath = "s3://${aws_s3_bucket.data.bucket}/models/" }
-        ResourceConfig = {
-          InstanceCount  = 1
-          InstanceType   = "ml.m5.large"
-          VolumeSizeInGB = 10
+          StoppingCondition = { MaxRuntimeInSeconds = 3600 } # hard stop at 1h per trial
         }
-        StoppingCondition = { MaxRuntimeInSeconds = 3600 } # hard stop at 1h
       }
     }]
   })

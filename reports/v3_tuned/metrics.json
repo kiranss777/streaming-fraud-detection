@@ -1,0 +1,238 @@
+{
+  "rows": {
+    "fit": 1037340,
+    "valid": 259335,
+    "test": 555719
+  },
+  "params": {
+    "objective": "binary:logistic",
+    "eval_metric": "aucpr",
+    "tree_method": "hist",
+    "max_depth": 7,
+    "eta": 0.03233992996056216,
+    "min_child_weight": 15.874648746051212,
+    "subsample": 0.7781625178543154,
+    "colsample_bytree": 0.6242688665815392,
+    "max_delta_step": 7.139301970562084,
+    "scale_pos_weight": 172.8170241286863
+  },
+  "best_iteration": 933,
+  "test": {
+    "threshold": 0.84,
+    "roc_auc": 0.9995,
+    "pr_auc": 0.9759,
+    "precision": 0.964,
+    "recall": 0.91,
+    "f1": 0.9362,
+    "accuracy": 0.9995,
+    "fraud_dollars_caught_pct": 0.9569,
+    "confusion": {
+      "caught": 1952,
+      "false_alarms": 73,
+      "missed": 193,
+      "correctly_ignored": 553501
+    }
+  },
+  "always_say_legit_accuracy": 0.9961,
+  "threshold_tradeoff": [
+    {
+      "threshold": 0.1,
+      "roc_auc": 0.9995,
+      "pr_auc": 0.9759,
+      "precision": 0.7479,
+      "recall": 0.9697,
+      "f1": 0.8445,
+      "accuracy": 0.9986,
+      "fraud_dollars_caught_pct": 0.9889,
+      "confusion": {
+        "caught": 2080,
+        "false_alarms": 701,
+        "missed": 65,
+        "correctly_ignored": 552873
+      }
+    },
+    {
+      "threshold": 0.3,
+      "roc_auc": 0.9995,
+      "pr_auc": 0.9759,
+      "precision": 0.8638,
+      "recall": 0.9576,
+      "f1": 0.9082,
+      "accuracy": 0.9993,
+      "fraud_dollars_caught_pct": 0.9836,
+      "confusion": {
+        "caught": 2054,
+        "false_alarms": 324,
+        "missed": 91,
+        "correctly_ignored": 553250
+      }
+    },
+    {
+      "threshold": 0.5,
+      "roc_auc": 0.9995,
+      "pr_auc": 0.9759,
+      "precision": 0.9068,
+      "recall": 0.9483,
+      "f1": 0.9271,
+      "accuracy": 0.9994,
+      "fraud_dollars_caught_pct": 0.9801,
+      "confusion": {
+        "caught": 2034,
+        "false_alarms": 209,
+        "missed": 111,
+        "correctly_ignored": 553365
+      }
+    },
+    {
+      "threshold": 0.7,
+      "roc_auc": 0.9995,
+      "pr_auc": 0.9759,
+      "precision": 0.9402,
+      "recall": 0.9305,
+      "f1": 0.9353,
+      "accuracy": 0.9995,
+      "fraud_dollars_caught_pct": 0.9696,
+      "confusion": {
+        "caught": 1996,
+        "false_alarms": 127,
+        "missed": 149,
+        "correctly_ignored": 553447
+      }
+    },
+    {
+      "threshold": 0.9,
+      "roc_auc": 0.9995,
+      "pr_auc": 0.9759,
+      "precision": 0.9766,
+      "recall": 0.8965,
+      "f1": 0.9349,
+      "accuracy": 0.9995,
+      "fraud_dollars_caught_pct": 0.9512,
+      "confusion": {
+        "caught": 1923,
+        "false_alarms": 46,
+        "missed": 222,
+        "correctly_ignored": 553528
+      }
+    },
+    {
+      "threshold": 0.97,
+      "roc_auc": 0.9995,
+      "pr_auc": 0.9759,
+      "precision": 0.9913,
+      "recall": 0.8485,
+      "f1": 0.9143,
+      "accuracy": 0.9994,
+      "fraud_dollars_caught_pct": 0.9225,
+      "confusion": {
+        "caught": 1820,
+        "false_alarms": 16,
+        "missed": 325,
+        "correctly_ignored": 553558
+      }
+    },
+    {
+      "threshold": 0.99,
+      "roc_auc": 0.9995,
+      "pr_auc": 0.9759,
+      "precision": 0.9959,
+      "recall": 0.7995,
+      "f1": 0.887,
+      "accuracy": 0.9992,
+      "fraud_dollars_caught_pct": 0.8816,
+      "confusion": {
+        "caught": 1715,
+        "false_alarms": 7,
+        "missed": 430,
+        "correctly_ignored": 553567
+      }
+    }
+  ],
+  "shap_mean_abs": {
+    "amt": 3.308300018310547,
+    "amt_sum_24h": 2.212399959564209,
+    "category": 1.868399977684021,
+    "hour": 1.5503000020980835,
+    "card_txn_count": 1.0437999963760376,
+    "amt_to_card_avg": 0.8662999868392944,
+    "txn_count_24h": 0.7896999716758728,
+    "amt_zscore": 0.7583000063896179,
+    "secs_since_last_txn": 0.7110000252723694,
+    "age": 0.4514999985694885,
+    "card_avg_amt": 0.38119998574256897,
+    "city_pop": 0.31790000200271606,
+    "card_std_amt": 0.31310001015663147,
+    "distance_km": 0.18440000712871552,
+    "gender": 0.15379999577999115,
+    "day_of_week": 0.11339999735355377,
+    "txn_count_1h": 0.04179999977350235
+  },
+  "example_explanations": [
+    {
+      "amt": 312.5,
+      "category": "grocery_pos",
+      "score": 1.0,
+      "top_reasons": [
+        {
+          "feature": "amt_sum_24h",
+          "value": "4,840.96",
+          "shap": 5.608
+        },
+        {
+          "feature": "category",
+          "value": "grocery_pos",
+          "shap": 3.464
+        },
+        {
+          "feature": "amt",
+          "value": "312.50",
+          "shap": 3.155
+        }
+      ]
+    },
+    {
+      "amt": 319.1,
+      "category": "grocery_pos",
+      "score": 1.0,
+      "top_reasons": [
+        {
+          "feature": "category",
+          "value": "grocery_pos",
+          "shap": 4.01
+        },
+        {
+          "feature": "amt_sum_24h",
+          "value": "2,138.32",
+          "shap": 3.585
+        },
+        {
+          "feature": "amt",
+          "value": "319.10",
+          "shap": 3.327
+        }
+      ]
+    },
+    {
+      "amt": 980.71,
+      "category": "shopping_net",
+      "score": 1.0,
+      "top_reasons": [
+        {
+          "feature": "amt",
+          "value": "980.71",
+          "shap": 4.498
+        },
+        {
+          "feature": "amt_sum_24h",
+          "value": "2,196.56",
+          "shap": 3.982
+        },
+        {
+          "feature": "hour",
+          "value": "23",
+          "shap": 2.5
+        }
+      ]
+    }
+  ]
+}
