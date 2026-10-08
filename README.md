@@ -76,10 +76,30 @@ They accept no inbound traffic from the internet. Access is through SSM Session 
 - **v2 → v3:** 20 tuning trials all landed within 0.985–0.988 validation PR-AUC. The model is robust to its settings, and the features did the heavy lifting.
 - **The test set is never used to choose anything.** Validation is the most recent 20% of the training period (time-based split). The decision cutoff is picked on validation and only reported on test.
 
+**SHAP exposed v1's blind spot.** Each dot is one test transaction; dots right of centre push toward "fraud".
+- **v1 (left):** the grey dots on the card-history rows are cards the model never saw in training. Every training row had a card profile, so v1 learned nothing about missing history and pushed these cards hard toward "safe".
+- **v2 (right):** with point-in-time features the grey dots are gone, and velocity signals like *Spent in last 24h* move into the top three.
+
+<p>
+  <img src="reports/v1_baseline/shap_summary.png" width="49%" alt="v1 SHAP beeswarm with grey unseen-card dots">
+  <img src="reports/v2_point_in_time/shap_summary.png" width="49%" alt="v2 SHAP beeswarm, blind spot fixed">
+</p>
+
+**What the served model (v3) relies on, and why it flags individual transactions:**
+
 <p>
   <img src="reports/v3_tuned/shap_importance.png" width="49%" alt="Mean |SHAP| feature importance">
   <img src="reports/v3_tuned/shap_example_2.png" width="49%" alt="Why one transaction was flagged">
 </p>
+<p>
+  <img src="reports/v3_tuned/shap_example_1.png" width="49%" alt="Flagged: card drained over 24 hours">
+  <img src="reports/v3_tuned/shap_example_3.png" width="49%" alt="Flagged: near-new card spending big late at night">
+</p>
+
+The three examples show different fraud patterns:
+- a $319 in-store grocery charge at 2 AM after $2,138 had already been spent that day (top right);
+- a card drained of $4,841 in 24 hours (bottom left);
+- a card with only 3 past transactions spending $981 online at 11 PM (bottom right).
 
 Full reports for each version, including metrics, threshold trade-offs and SHAP charts, are in [`reports/`](reports/).
 
@@ -125,6 +145,18 @@ These are short step tests (75–90 s per rate) on 2 × `m7i-flex.large`, the la
 | Live alerts | Why it was flagged | Health & model |
 |---|---|---|
 | ![alerts](docs/images/dashboard_alerts.jpg) | ![drill-down](docs/images/dashboard_drilldown.jpg) | ![health](docs/images/dashboard_health.jpg) |
+
+**The model is graded live against the true labels.** Over a 5-minute run at 300 swipes/s, per-minute precision and recall held between about 0.85 and 1.0:
+
+![Live precision and recall per minute](docs/images/dashboard_live_grading.jpg)
+
+**The what-if cutoff slider rebuilds the confusion matrix from per-batch score histograms.** It shows the trade-off a fraud team actually has to choose:
+- **0.85:** catches 91.3% of fraud with 10 false alarms out of ~85,500 legitimate swipes.
+- **0.50:** catches 94.1% of fraud, but false alarms rise to 38.
+- Both live numbers match the offline test-set results.
+- The score distribution beside the table shows legit swipes piling up near 0 and fraud near 1. A shift in that shape is an early drift signal.
+
+![Cutoff trade-off at 0.85 vs 0.50](docs/images/dashboard_cutoff_tradeoff.jpg)
 
 **Live Alerts tab:**
 - Live / idle / stalled badge
