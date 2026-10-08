@@ -13,3 +13,7 @@ output "glue_etl_job" {
 output "sagemaker_role_arn" {
   value = aws_iam_role.this["sagemaker"].arn
 }
+
+output "training_pipeline" {
+  value = aws_sagemaker_pipeline.training.pipeline_name
+}

@@ -1,0 +1,266 @@
+{
+  "rows": {
+    "fit": 1037340,
+    "valid": 259335,
+    "test": 555719
+  },
+  "best_iteration": 109,
+  "test": {
+    "threshold": 0.9705,
+    "roc_auc": 0.9954,
+    "pr_auc": 0.8001,
+    "precision": 0.8591,
+    "recall": 0.6881,
+    "f1": 0.7642,
+    "accuracy": 0.9984,
+    "fraud_dollars_caught_pct": 0.7819,
+    "confusion": {
+      "caught": 1476,
+      "false_alarms": 242,
+      "missed": 669,
+      "correctly_ignored": 553332
+    }
+  },
+  "always_say_legit_accuracy": 0.9961,
+  "threshold_tradeoff": [
+    {
+      "threshold": 0.1,
+      "roc_auc": 0.9954,
+      "pr_auc": 0.8001,
+      "precision": 0.0764,
+      "recall": 0.9776,
+      "f1": 0.1418,
+      "accuracy": 0.9543,
+      "fraud_dollars_caught_pct": 0.988,
+      "confusion": {
+        "caught": 2097,
+        "false_alarms": 25340,
+        "missed": 48,
+        "correctly_ignored": 528234
+      }
+    },
+    {
+      "threshold": 0.3,
+      "roc_auc": 0.9954,
+      "pr_auc": 0.8001,
+      "precision": 0.1516,
+      "recall": 0.9259,
+      "f1": 0.2606,
+      "accuracy": 0.9797,
+      "fraud_dollars_caught_pct": 0.9312,
+      "confusion": {
+        "caught": 1986,
+        "false_alarms": 11112,
+        "missed": 159,
+        "correctly_ignored": 542462
+      }
+    },
+    {
+      "threshold": 0.5,
+      "roc_auc": 0.9954,
+      "pr_auc": 0.8001,
+      "precision": 0.2238,
+      "recall": 0.8956,
+      "f1": 0.3581,
+      "accuracy": 0.9876,
+      "fraud_dollars_caught_pct": 0.9169,
+      "confusion": {
+        "caught": 1921,
+        "false_alarms": 6662,
+        "missed": 224,
+        "correctly_ignored": 546912
+      }
+    },
+    {
+      "threshold": 0.7,
+      "roc_auc": 0.9954,
+      "pr_auc": 0.8001,
+      "precision": 0.3319,
+      "recall": 0.8583,
+      "f1": 0.4787,
+      "accuracy": 0.9928,
+      "fraud_dollars_caught_pct": 0.8931,
+      "confusion": {
+        "caught": 1841,
+        "false_alarms": 3706,
+        "missed": 304,
+        "correctly_ignored": 549868
+      }
+    },
+    {
+      "threshold": 0.9,
+      "roc_auc": 0.9954,
+      "pr_auc": 0.8001,
+      "precision": 0.6078,
+      "recall": 0.773,
+      "f1": 0.6805,
+      "accuracy": 0.9972,
+      "fraud_dollars_caught_pct": 0.8415,
+      "confusion": {
+        "caught": 1658,
+        "false_alarms": 1070,
+        "missed": 487,
+        "correctly_ignored": 552504
+      }
+    },
+    {
+      "threshold": 0.97,
+      "roc_auc": 0.9954,
+      "pr_auc": 0.8001,
+      "precision": 0.8568,
+      "recall": 0.689,
+      "f1": 0.7638,
+      "accuracy": 0.9984,
+      "fraud_dollars_caught_pct": 0.782,
+      "confusion": {
+        "caught": 1478,
+        "false_alarms": 247,
+        "missed": 667,
+        "correctly_ignored": 553327
+      }
+    },
+    {
+      "threshold": 0.99,
+      "roc_auc": 0.9954,
+      "pr_auc": 0.8001,
+      "precision": 0.9389,
+      "recall": 0.6019,
+      "f1": 0.7335,
+      "accuracy": 0.9983,
+      "fraud_dollars_caught_pct": 0.6937,
+      "confusion": {
+        "caught": 1291,
+        "false_alarms": 84,
+        "missed": 854,
+        "correctly_ignored": 553490
+      }
+    }
+  ],
+  "shap_mean_abs": {
+    "amt": 3.0827999114990234,
+    "category": 2.180500030517578,
+    "hour": 0.7179999947547913,
+    "card_txn_count": 0.3077000081539154,
+    "city_pop": 0.27149999141693115,
+    "age": 0.22269999980926514,
+    "amt_to_card_avg": 0.2184000015258789,
+    "card_avg_amt": 0.19480000436306,
+    "amt_zscore": 0.12139999866485596,
+    "card_std_amt": 0.1088000014424324,
+    "day_of_week": 0.057999998331069946,
+    "distance_km": 0.054499998688697815,
+    "gender": 0.028599999845027924
+  },
+  "example_explanations": [
+    {
+      "amt": 9.12,
+      "category": "gas_transport",
+      "score": 0.9998,
+      "top_reasons": [
+        {
+          "feature": "category",
+          "value": "gas_transport",
+          "shap": 3.608
+        },
+        {
+          "feature": "amt_zscore",
+          "value": "-0.9797881499954796",
+          "shap": 1.99
+        },
+        {
+          "feature": "hour",
+          "value": "2",
+          "shap": 1.101
+        }
+      ]
+    },
+    {
+      "amt": 974.22,
+      "category": "shopping_net",
+      "score": 0.9998,
+      "top_reasons": [
+        {
+          "feature": "amt",
+          "value": "974.22",
+          "shap": 7.217
+        },
+        {
+          "feature": "hour",
+          "value": "22",
+          "shap": 2.214
+        },
+        {
+          "feature": "amt_to_card_avg",
+          "value": "16.06251241500245",
+          "shap": 0.449
+        }
+      ]
+    },
+    {
+      "amt": 996.21,
+      "category": "misc_net",
+      "score": 0.9998,
+      "top_reasons": [
+        {
+          "feature": "amt",
+          "value": "996.21",
+          "shap": 7.244
+        },
+        {
+          "feature": "hour",
+          "value": "22",
+          "shap": 2.186
+        },
+        {
+          "feature": "city_pop",
+          "value": "519",
+          "shap": 0.18
+        }
+      ]
+    },
+    {
+      "amt": 1042.2,
+      "category": "shopping_net",
+      "score": 0.9998,
+      "top_reasons": [
+        {
+          "feature": "amt",
+          "value": "1042.2",
+          "shap": 7.123
+        },
+        {
+          "feature": "hour",
+          "value": "23",
+          "shap": 2.251
+        },
+        {
+          "feature": "card_txn_count",
+          "value": "1023.0",
+          "shap": 0.619
+        }
+      ]
+    },
+    {
+      "amt": 782.49,
+      "category": "misc_net",
+      "score": 0.9998,
+      "top_reasons": [
+        {
+          "feature": "amt",
+          "value": "782.49",
+          "shap": 6.959
+        },
+        {
+          "feature": "hour",
+          "value": "23",
+          "shap": 2.036
+        },
+        {
+          "feature": "card_txn_count",
+          "value": "516.0",
+          "shap": 0.507
+        }
+      ]
+    }
+  ]
+}

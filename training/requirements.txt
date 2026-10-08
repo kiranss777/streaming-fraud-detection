@@ -1,0 +1,4 @@
+# Installed by SageMaker inside the training container (sagemaker-xgboost 3.0-5,
+# which already ships xgboost, pandas, pyarrow and scikit-learn).
+shap
+matplotlib
