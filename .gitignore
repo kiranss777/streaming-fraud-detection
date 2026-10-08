@@ -12,6 +12,14 @@ models/
 *.parquet
 *.tar.gz
 
+# Terraform (lock file IS committed)
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+*.tfplan
+
 # Secrets
 .env
 kaggle.json

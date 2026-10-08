@@ -1,0 +1,3 @@
+kaggle              # download the dataset
+boto3               # AWS SDK for Python
+python-dotenv[cli]  # load .env in Python; `dotenv run -- <cmd>` in the terminal
